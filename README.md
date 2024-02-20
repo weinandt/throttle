@@ -13,3 +13,5 @@ Implementation of cache and throttling mechanisms
 3. Implement auth in the server.
     - How do do multi-tenancy
 4. Implement throttling.
+5. Should the server be http or http2 server?
+    - How does that work with aws alb.
