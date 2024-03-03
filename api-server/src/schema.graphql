@@ -1,0 +1,17 @@
+type CacheLookUpResult {
+  wasFound: Boolean!
+  value: String # Will be set if the cache result was found.
+}
+
+input CacheSetInput {
+  key: String!
+  value: String! # Most likely stringified JSON.
+}
+
+type Query {
+  get(key: String!): CacheLookUpResult! 
+}
+
+type Mutation {
+  set(input: CacheSetInput): String # please ignore the return type
+}
