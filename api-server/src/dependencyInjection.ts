@@ -10,7 +10,11 @@ import { CacheResolvers } from "./cache/cacheResolvers";
 export function setUpDepedencies() {
     const client = new DynamoDBClient({});
     const docClient = DynamoDBDocumentClient.from(client);
-    const cache = new DynamoCache(docClient)
+    const cache = new DynamoCache({
+        dynamoClient: docClient,
+        tableName: "test",
+        partitionKey: "my-parition-key"
+    })
     const cacheResolvers = new CacheResolvers(cache)
 
     return {

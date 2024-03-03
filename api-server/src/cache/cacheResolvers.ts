@@ -9,7 +9,7 @@ export type CacheSetInput = {
 
 export type CacheLookUpResult = {
     wasFound: boolean
-    value: string | undefined
+    value: string | null
 }
 
 export class CacheResolvers {
