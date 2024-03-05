@@ -1,21 +1,17 @@
-import { BookResolvers } from "./book/bookResolver"
-import { InMemoryBookStore } from "./book/bookStore"
 import { GraphQLResolveInfo } from 'graphql';
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { PutCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { DynamoCache } from "./cache/cache";
+import {Pool} from 'pg'
 import { CacheResolvers } from "./cache/cacheResolvers";
-
+import { PostgresCache } from './cache/cache';
 
 export function setUpDepedencies() {
-    const client = new DynamoDBClient({});
-    const docClient = DynamoDBDocumentClient.from(client);
-    const cache = new DynamoCache({
-        dynamoClient: docClient,
-        tableName: "test",
-        partitionKey: "my-parition-key"
-    })
-    const cacheResolvers = new CacheResolvers(cache)
+    const poolConfig = {
+        connectionString: 'postgres://postgres:postgres@localhost:5432',
+        max: 100,
+        allowExitOnIdle: true,
+    }
+    const pool = new Pool(poolConfig)
+    const postgresCache = new PostgresCache({pool})
+    const cacheResolvers = new CacheResolvers(postgresCache)
 
     return {
         Query: {
