@@ -5,8 +5,6 @@ Implementation of cache and throttling mechanisms
 ## To Run Test
 1. Go to AWS Console and create a dynamo table, specifing a partition key.
 
-
-
 ## TODO:
 1. Create a simple webserver which sends requests to dynamo
 2. Is the dynamo client http2 compatible?
