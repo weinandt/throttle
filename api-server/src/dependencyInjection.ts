@@ -6,7 +6,7 @@ import { PostgresCache } from './cache/cache';
 export function setUpDepedencies() {
     const poolConfig = {
         connectionString: 'postgres://postgres:postgres@localhost:5432',
-        max: 100,
+        max: 15,
         allowExitOnIdle: true,
     }
     const pool = new Pool(poolConfig)
