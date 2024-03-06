@@ -15,3 +15,4 @@
 - Auth
 - Tenancy
 - Delete from cache api
+- Determine if you should use docker-compose or test-containers: https://node.testcontainers.org/modules/postgresql/
