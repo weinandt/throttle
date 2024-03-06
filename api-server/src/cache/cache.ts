@@ -1,5 +1,6 @@
 import { Pool } from 'pg'
-import { randomUUID } from 'node:crypto'
+
+const tempGuidForEverything = 'dc182110-77a1-4ffe-a688-ad92dbd2f4e0'
 
 export interface Cache {
     get(key: string): Promise<[wasFound: boolean, value: string | null]>
@@ -15,7 +16,13 @@ export class PostgresCache implements Cache {
     }
 
     async get(key: string): Promise<[boolean, string | null]> {
-        const result = await this.pool.query("select value from cache where key = $1", [key])
+        const query = `
+            SELECT value FROM cache
+                WHERE tenant_id = $1
+                    AND application_id = $2
+                    AND key = $3
+        `
+        const result = await this.pool.query(query, [tempGuidForEverything, tempGuidForEverything, key])
         if (result.rows.length == 0) {
             // Didn't find anything for that key.
             return [false, null]
@@ -25,10 +32,11 @@ export class PostgresCache implements Cache {
     }
 
     async set(key: string, value: string): Promise<void> {
-        const randomGuid = randomUUID().toString()
         await this.pool.query(`
             INSERT INTO cache (tenant_id, application_id, key, value)
-            VALUES ($1, $2, $3, $4)
-        `, [randomGuid, randomGuid, key, value])
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (tenant_id, application_id, key) DO UPDATE
+                SET value = $4;
+        `, [tempGuidForEverything, tempGuidForEverything, key, value])
     }
 }

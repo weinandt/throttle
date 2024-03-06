@@ -8,4 +8,10 @@
 6. Click the playground link in the console.
 
 ## TODO
-1. Have server test postgres connection with dummy query during startup.
+- Have server test postgres connection with dummy query during startup.
+- Determine if composite primary key is best, or if single column string key (dynamo way) is faster.
+    - Determine how the ordering of the composite key works.
+- Add proper error handling.
+- Auth
+- Tenancy
+- Delete from cache api
