@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs"
 import {Pool} from 'pg'
 
 // Queries for set up.

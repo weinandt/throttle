@@ -16,3 +16,6 @@
 - Tenancy
 - Delete from cache api
 - Determine if you should use docker-compose or test-containers: https://node.testcontainers.org/modules/postgresql/ 
+- Set transaction timeouts and request times on postgres
+- Write an SDK which converts JSON to string
+- Write a cli for tenant provisioning and application provisioning.
