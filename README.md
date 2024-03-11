@@ -2,11 +2,8 @@
 
 Implementation of cache and throttling mechanisms
 
-## TODO:
-1. Create a simple webserver which sends requests to dynamo
-2. Is the dynamo client http2 compatible?
-3. Implement auth in the server.
-    - How do do multi-tenancy
-4. Implement throttling.
-5. Should the server be http or http2 server?
-    - How does that work with aws alb.
+## What it could be used for
+1. Per application feature flag storage.
+2. Throttle counters.
+3. Horizontally scalable web sockets
+    - Cache serves as a lookup mechanism for ip address of a particular client.

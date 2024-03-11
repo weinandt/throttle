@@ -6,7 +6,7 @@
     "start": "ts-node src/server.ts",
     "build": "tsc",
     "test": "mocha --require ts-node/register 'src/**/*.test.ts'",
-    "set-up": "ts-node src/sqlScripts/setUp.ts"
+    "set-up": "ts-node src/sqlScripts/provisionTables.ts"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.1",

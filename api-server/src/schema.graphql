@@ -15,3 +15,6 @@ type Query {
 type Mutation {
   set(input: CacheSetInput): String # please ignore the return type
 }
+
+
+# Management APIs. Maybe exposed through a CLI or a Web App.
