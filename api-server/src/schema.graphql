@@ -13,8 +13,17 @@ type Query {
 }
 
 type Mutation {
-  set(input: CacheSetInput): String # please ignore the return type
+  set(input: CacheSetInput!): String # please ignore the return type
+
+  # Management APIs
+  createTenant(input: CreateTenantInput!): Tenant!
 }
 
-
 # Management APIs. Maybe exposed through a CLI or a Web App.
+input CreateTenantInput {
+  ingoreThis: String # Field is required but don't want  to break back compat.
+}
+
+type Tenant {
+ tenantId: String!
+}

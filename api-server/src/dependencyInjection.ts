@@ -4,6 +4,8 @@ import { CacheResolvers } from "./cache/cacheResolvers";
 import { DynamoCache, PostgresCache } from './cache/cache';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { PostgresTenantGateway } from './tenant/tenant';
+import { TenantResolvers } from './tenant/tenantResolvers';
 
 export function setUpDepedencies() {
     const poolConfig = {
@@ -11,12 +13,14 @@ export function setUpDepedencies() {
         max: 15,
         allowExitOnIdle: true,
     }
-
-    // Will use postgres for tenancy information. But is not currently used for the cache.
     const pool = new Pool(poolConfig)
-    
-    const client = new DynamoDBClient({});
-    const docClient = DynamoDBDocumentClient.from(client);
+
+    // Management APIs
+    const tenantGateway = new PostgresTenantGateway({pool})
+    const tenantResolvers = new TenantResolvers({tenantGateway})
+
+
+    const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
     const cache = new DynamoCache({
         dynamoClient: docClient,
         tableName: "test",
@@ -24,13 +28,13 @@ export function setUpDepedencies() {
     })
     const cacheResolvers = new CacheResolvers(cache)
 
-    
     return {
         Query: {
            get:(parent: any, args: any, context: any, info: GraphQLResolveInfo) => cacheResolvers.get(parent, args, context, info),
         },
         Mutation: {
-            set: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => cacheResolvers.set(parent, args, context, info)
+            set: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => cacheResolvers.set(parent, args, context, info),
+            createTenant: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => tenantResolvers.createTenant(parent, args, context, info)
         }
     }
 }
