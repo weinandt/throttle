@@ -7,6 +7,10 @@
 5. `npm run start`
 6. Click the playground link in the console.
 
+
+## AWS Links
+- DynamoDB NodeJS v3 Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/dynamodb/ 
+
 ## TODO
 - Have server test postgres connection with dummy query during startup.
 - Tenancy
