@@ -1,9 +1,10 @@
 import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
+import { ArgumentError } from '../error/error'
 
 export interface Cache {
     get(key: string): Promise<[wasFound: boolean, value: string | null]>
-    set(key: string, value: string): Promise<void>
+    set(key: string, value: string, ttl: number | null): Promise<void>
 }
 
 export class DynamoCache implements Cache {
@@ -12,7 +13,6 @@ export class DynamoCache implements Cache {
     private partitionKey: string
     private valueKey = "value"
     private ttlKey = 'expirationTime'
-    private static maxTTLInSeconds = 30
 
     constructor({dynamoClient, tableName, partitionKey}: {
         dynamoClient: DynamoDBDocumentClient,
@@ -67,15 +67,21 @@ export class DynamoCache implements Cache {
         return [true, value.S]
     }
 
-    async set(key: string, value: string): Promise<void> {
-        // TODO: Remove this and put in the api layer
-        const expirationTime = Math.floor(new Date().getTime() / 1000) + DynamoCache.maxTTLInSeconds
+    async set(key: string, value: string, ttl: number | null): Promise<void> {
         const Item: any = {}
         Item[this.partitionKey] = key
         Item[this.valueKey] = value
-        // TODO: move this to the api layer.
-        Item[this.ttlKey] = expirationTime
 
+        if (ttl != null) {
+            // TODO: make this a graphql scalar.
+            const isValidDate = !isNaN(Date.parse(new Date(ttl).toString()))
+            if(!isValidDate) {
+                throw new ArgumentError('TTL Date was not valid' + ttl)
+            }
+        
+            Item[this.ttlKey] = ttl
+        }
+        
         // Put will completely overwrite the item.
         const command = new PutCommand({
             TableName: this.tableName,

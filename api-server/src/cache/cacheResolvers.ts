@@ -5,6 +5,7 @@ import { Cache } from "./cache";
 export type CacheSetInput = {
     key: string
     value: string
+    ttl: number | null
 }
 
 export type CacheLookUpResult = {
@@ -19,7 +20,7 @@ export class CacheResolvers {
     }
 
     async set(_: any, args: {input: CacheSetInput}, context: RequestContext, info: GraphQLResolveInfo): Promise<null> {
-        await this.cache.set(args.input.key, args.input.value)
+        await this.cache.set(args.input.key, args.input.value, args.input.ttl)
 
         return null
     }

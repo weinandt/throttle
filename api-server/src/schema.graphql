@@ -4,8 +4,12 @@ type CacheLookUpResult {
 }
 
 input CacheSetInput {
-  key: String!
+  key: String! # Providing the same key, but different value and TTL will overwrite the cached object entirely.
   value: String! # Most likely stringified JSON.
+  # Optional time to live in unix epoch seconds. 
+  # If set, item will be expired from the cache at this time.
+  # Providing no value means the item is permenantly set.
+  ttl: Int
 }
 
 type Query {
