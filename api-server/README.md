@@ -9,14 +9,16 @@
 
 ## TODO
 - Have server test postgres connection with dummy query during startup.
-- Determine if composite primary key is best, or if single column string key (dynamo way) is faster.
-    - Determine how the ordering of the composite key works.
-- Add proper error handling.
 - Tenancy
 - Delete from cache api
-- Determine if you should use docker-compose or test-containers: https://node.testcontainers.org/modules/postgresql/ 
 - Set transaction timeouts and request times on postgres
-- Write an SDK which converts JSON to string
 - Write a cli for tenant provisioning and application provisioning.
 - Implement feature flags
     - Good use case for batch write to cache and pagniated get.
+- Implement token burst and distributed throttle.
+- Test out dynamo ttl
+    - Removing attribute should prevent from purging
+    - Purged attribute should be purged.
+    - Updated key without ttl, should have ttl removed.
+- Create dynamo db table creation sdk.
+    - SDK should provision partition key and TTL name.

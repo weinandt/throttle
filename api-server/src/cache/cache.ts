@@ -1,8 +1,5 @@
 import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Pool } from 'pg'
-
-const tempGuidForEverything = 'dc182110-77a1-4ffe-a688-ad92dbd2f4e0'
 
 export interface Cache {
     get(key: string): Promise<[wasFound: boolean, value: string | null]>
@@ -42,16 +39,23 @@ export class DynamoCache implements Cache {
 
         const value = response.Item[this.valueKey]
         if (value.S == null) {
-            throw new Error("Cached item was found but did not have a value. Key Used: " + key)
+            throw new Error("Cached item was founds but did not have a value. Key Used: " + key)
         }
 
         return [true, value.S]
     }
 
     async set(key: string, value: string): Promise<void> {
+        // TODO: Remove this and put in the api layer
+        const maxTTLInSeconds = 30
+        const expirationTime = Math.floor(new Date().getTime() / 1000) + maxTTLInSeconds
         const Item: any = {}
         Item[this.partitionKey] = key
         Item['value'] = value
+        // TODO: move this to the api layer.
+        Item['expirationTime'] = expirationTime
+
+        // Put will completely overwrite the item.
         const command = new PutCommand({
             TableName: this.tableName,
             Item,
