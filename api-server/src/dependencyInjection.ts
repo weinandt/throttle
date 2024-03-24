@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql';
 import {Pool} from 'pg'
 import { CacheResolvers } from "./cache/cacheResolvers";
-import { DynamoCache, PostgresCache } from './cache/cache';
+import { DynamoCache } from './cache/cache';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { PostgresTenantGateway } from './tenant/tenant';
