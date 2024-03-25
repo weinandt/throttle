@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A project format which can be copied for project which wish to use node, typescript, vscode, nodemon, mocha.",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "start": "ts-node src/main.ts",
     "build": "tsc",
     "test": "mocha --require ts-node/register 'src/**/*.test.ts'",
     "set-up": "ts-node src/sqlScripts/provisionTables.ts"

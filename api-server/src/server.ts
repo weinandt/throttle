@@ -7,31 +7,52 @@ import { createHandler } from 'graphql-http/lib/use/express'
 import expressPlayground from 'graphql-playground-middleware-express'
 import { setUpDepedencies } from './dependencyInjection'
 import { createExpressContext } from './context'
+import http from "node:http"
 
-// GraphQL Stuff
-const schema = loadSchemaSync(join(__dirname, 'schema.graphql'), {
-    loaders: [new GraphQLFileLoader()]
-})
+export type ServerConfig = {
+    port: number
+}
 
-const resolvers = setUpDepedencies()
-const schemaWithResolvers = addResolversToSchema({ schema, resolvers })
-const graphqlHandler = createHandler({
-    schema: schemaWithResolvers,
-    context: async (req: Express.Request, args) => {
-        return createExpressContext(req)
-    }
-})
+export async function startServer(serverConfig: ServerConfig): Promise<http.Server> {
+    // GraphQL Stuff
+    const schema = loadSchemaSync(join(__dirname, 'schema.graphql'), {
+        loaders: [new GraphQLFileLoader()]
+    })
 
-// Express Routes.
-const app = express()
-app.use('/graphql', (req, res, next) => {
-    graphqlHandler(req, res, next)
-})
+    const resolvers = setUpDepedencies()
+    const schemaWithResolvers = addResolversToSchema({ schema, resolvers })
+    const graphqlHandler = createHandler({
+        schema: schemaWithResolvers,
+        context: async (req: Express.Request, args) => {
+            return createExpressContext(req)
+        }
+    })
 
-// For graphiql 
-app.get('/playground', expressPlayground({ endpoint: '/graphql' }))
+    // Express Routes.
+    const app = express()
+    app.use('/graphql', (req, res, next) => {
+        graphqlHandler(req, res, next)
+    })
 
+    // For graphiql 
+    app.get('/playground', expressPlayground({ endpoint: '/graphql' }))
 
-const port = 3000
-app.listen(port)
-console.log(`Server started. Playground at: http://localhost:${port}/playground`)
+    const httpServerPromise: Promise<http.Server> = new Promise(async httpServerResolve => {
+        let httpServer: http.Server | null = null
+        const serverStartPromise: Promise<void> = new Promise( resolve => {
+            httpServer = app.listen(serverConfig.port, () => {
+                resolve()
+            })
+        })
+
+        await serverStartPromise
+
+        if (httpServer == null) {
+            throw new Error('Could not start http server in server.ts')
+        }
+        
+        httpServerResolve(httpServer)
+    })
+
+    return httpServerPromise
+}
