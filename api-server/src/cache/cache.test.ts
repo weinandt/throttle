@@ -2,11 +2,16 @@ import http from "node:http"
 import { ServerConfig, startServer } from "../server";
 import assert from "node:assert";
 import { Overrides, setUpDepedencies } from "../dependencyInjection";
-import { InMemoryCache } from "./cache";
+import { Cache, InMemoryCache, InMemoryMock } from "./cache";
 
 describe('Cache Integration Tests', function () {
+    const inMemoryCache: InMemoryCache = new InMemoryCache()
+    const inMemoryImplementations: InMemoryMock[] = [
+        inMemoryCache,
+    ]
+
     const overrides: Overrides = {
-        cache: new InMemoryCache()
+        cache: inMemoryCache
     }
     const resolvers = setUpDepedencies(overrides)
     const serverConfig: ServerConfig = {
@@ -30,11 +35,8 @@ describe('Cache Integration Tests', function () {
     });
 
     beforeEach(function () {
-        // runs before each test in this block
-    });
-
-    afterEach(function () {
-        // runs after each test in this block
+        // Clear all in memory implementations so tests don't take dependency on each other.
+        inMemoryImplementations.forEach(x => x.clear())
     });
 
     it('Item not in the cache should return not found', async () => {
