@@ -36,7 +36,6 @@ describe('Cache Integration', function () {
             {
                 get(key: "doesNotExist") {
                     wasFound
-                    value
                 }
             }
           `
@@ -51,7 +50,6 @@ describe('Cache Integration', function () {
         })
         const responseJson: any = await response.json()
 
-       // assert.deepEqual(responseJson)
         assert.equal(responseJson.data.get.wasFound, false)
     })
 });
