@@ -1,10 +1,17 @@
 import http from "node:http"
 import { ServerConfig, startServer } from "../server";
 import assert from "node:assert";
+import { Overrides, setUpDepedencies } from "../dependencyInjection";
+import { InMemoryCache } from "./cache";
 
-describe('Cache Integration', function () {
+describe('Cache Integration Tests', function () {
+    const overrides: Overrides = {
+        cache: new InMemoryCache()
+    }
+    const resolvers = setUpDepedencies(overrides)
     const serverConfig: ServerConfig = {
-        port: 3000
+        port: 3000,
+        resolvers,
     }
     let server: http.Server
     before(async () => {

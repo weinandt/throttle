@@ -1,10 +1,13 @@
 import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { ArgumentError } from '../error/error'
 
 export interface Cache {
     get(key: string): Promise<[wasFound: boolean, value: string | null]>
     set(key: string, value: string, ttl: number | null): Promise<void>
+}
+
+export interface InMemoryMock {
+    clear(): void // Clears everything store in memory
 }
 
 export class DynamoCache implements Cache {
@@ -74,11 +77,6 @@ export class DynamoCache implements Cache {
 
         if (ttl != null) {
             // TODO: make this a graphql scalar.
-            const isValidDate = !isNaN(Date.parse(new Date(ttl).toString()))
-            if(!isValidDate) {
-                throw new ArgumentError('TTL Date was not valid' + ttl)
-            }
-        
             Item[this.ttlKey] = ttl
         }
         
@@ -89,5 +87,27 @@ export class DynamoCache implements Cache {
         });
         
         await this.dynamoClient.send(command);
+    }
+}
+
+export class InMemoryCache implements Cache, InMemoryMock {
+    private cache: Map<string, string> = new Map()
+
+    async get(key: string): Promise<[wasFound: boolean, value: string | null]> {
+        const value = this.cache.get(key)
+        if (value == null) {
+            return [false, null]
+        }
+
+        return [true, value]
+    }
+
+    async set(key: string, value: string, ttl: number | null): Promise<void> {
+        // TODO: move ttl higher in the stack.
+        this.cache.set(key, value)
+    }
+    
+    clear() {
+        this.cache.clear()
     }
 }

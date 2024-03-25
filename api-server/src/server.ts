@@ -5,12 +5,13 @@ import { addResolversToSchema } from '@graphql-tools/schema'
 import express from 'express'
 import { createHandler } from 'graphql-http/lib/use/express'
 import expressPlayground from 'graphql-playground-middleware-express'
-import { setUpDepedencies } from './dependencyInjection'
+import { Resolvers } from './dependencyInjection'
 import { createExpressContext } from './context'
 import http from "node:http"
 
 export type ServerConfig = {
     port: number
+    resolvers: Resolvers
 }
 
 export async function startServer(serverConfig: ServerConfig): Promise<http.Server> {
@@ -19,8 +20,7 @@ export async function startServer(serverConfig: ServerConfig): Promise<http.Serv
         loaders: [new GraphQLFileLoader()]
     })
 
-    const resolvers = setUpDepedencies()
-    const schemaWithResolvers = addResolversToSchema({ schema, resolvers })
+    const schemaWithResolvers = addResolversToSchema({ schema, resolvers: serverConfig.resolvers })
     const graphqlHandler = createHandler({
         schema: schemaWithResolvers,
         context: async (req: Express.Request, args) => {
@@ -50,7 +50,7 @@ export async function startServer(serverConfig: ServerConfig): Promise<http.Serv
         if (httpServer == null) {
             throw new Error('Could not start http server in server.ts')
         }
-        
+
         httpServerResolve(httpServer)
     })
 

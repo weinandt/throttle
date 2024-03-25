@@ -26,8 +26,12 @@ export class CacheResolvers {
     }
 
     async get(_: any, args: {key: string}, context: RequestContext, info: GraphQLResolveInfo): Promise<CacheLookUpResult> {
-        const [wasFound, value] = await this.cache.get(args.key)
+        let [wasFound, value] = await this.cache.get(args.key)
 
+        // TODO: make void a graphql scalar.
+        if (value == null) {
+            value = ""
+        }
         return {
             wasFound,
             value,
