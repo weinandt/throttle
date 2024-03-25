@@ -61,4 +61,61 @@ describe('Cache Integration Tests', function () {
 
         assert.equal(responseJson.data.get.wasFound, false)
     })
+
+    it('Set Item Should Be Returned', async () => {
+        const key = 'testkey'
+        const value = 'testvalue'
+        const setMutation = {
+            query: `
+                mutation {
+                    set(input: {
+                    key: "${key}"
+                    value: "${value}"
+                    })
+                }
+          `
+        };
+
+        // TODO: move this to it's own mehtod
+        let response = await fetch(`http://localhost:${serverConfig.port}/graphql`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(setMutation)
+        })
+        
+        await response.json()
+
+        const query = {
+            query: `
+                {
+                    get(key: "${key}") {
+                        wasFound
+                        value
+                    }
+                }
+            `
+        }
+
+        response = await fetch(`http://localhost:${serverConfig.port}/graphql`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(query)
+        })
+
+        const responseJson: any = await response.json()
+        assert.deepEqual(responseJson.data.get, {
+            wasFound: true,
+            value: value
+        })
+    })
+
+    // TODO: test for setting then getting
+
+    // TODO: test for ttl
+
+    // TODO: test for changing from ttl to not ttl.
 });
