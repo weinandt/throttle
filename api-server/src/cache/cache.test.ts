@@ -2,10 +2,11 @@ import http from "node:http"
 import { ServerConfig, startServer } from "../server";
 import assert from "node:assert";
 import { Overrides, setUpDepedencies } from "../dependencyInjection";
-import { Cache, InMemoryCache, InMemoryMock } from "./cache";
+import { InMemoryCache } from "./cache";
+import { GraphQLClient, InMemoryMock } from "../test/utilties";
 
 describe('Cache Integration Tests', function () {
-    const inMemoryCache: InMemoryCache = new InMemoryCache()
+    const inMemoryCache = new InMemoryCache()
     const inMemoryImplementations: InMemoryMock[] = [
         inMemoryCache,
     ]
@@ -19,6 +20,7 @@ describe('Cache Integration Tests', function () {
         resolvers,
     }
     let server: http.Server
+    const client = new GraphQLClient(3000)
     before(async () => {
 
         server = await startServer(serverConfig)
@@ -40,55 +42,33 @@ describe('Cache Integration Tests', function () {
     });
 
     it('Item not in the cache should return not found', async () => {
-        const query = {
-            query: `
+        const query = `
             {
                 get(key: "doesNotExist") {
                     wasFound
                 }
             }
           `
-        };
+        const result = await client.request(query)
 
-        const response = await fetch(`http://localhost:${serverConfig.port}/graphql`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(query)
-        })
-        const responseJson: any = await response.json()
-
-        assert.equal(responseJson.data.get.wasFound, false)
+        assert.equal(result.data.get.wasFound, false)
     })
 
     it('Set Item Should Be Returned', async () => {
         const key = 'testkey'
         const value = 'testvalue'
-        const setMutation = {
-            query: `
+        const mutation = `
                 mutation {
                     set(input: {
                     key: "${key}"
                     value: "${value}"
                     })
                 }
-          `
-        };
+        `
 
-        // TODO: move this to it's own mehtod
-        let response = await fetch(`http://localhost:${serverConfig.port}/graphql`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(setMutation)
-        })
-        
-        await response.json()
+        await client.request(mutation)
 
-        const query = {
-            query: `
+        const query = `
                 {
                     get(key: "${key}") {
                         wasFound
@@ -96,18 +76,10 @@ describe('Cache Integration Tests', function () {
                     }
                 }
             `
-        }
-
-        response = await fetch(`http://localhost:${serverConfig.port}/graphql`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(query)
-        })
-
-        const responseJson: any = await response.json()
-        assert.deepEqual(responseJson.data.get, {
+        
+        const queryResponse = await client.request(query)
+        
+        assert.deepEqual(queryResponse.data.get, {
             wasFound: true,
             value: value
         })

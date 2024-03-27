@@ -1,5 +1,6 @@
 import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
+import { InMemoryMock } from '../test/utilties'
 
 export type CacheSetInput = {
     key: string
@@ -16,10 +17,6 @@ export type CacheLookUpResult = {
 export interface Cache {
     get(key: string): Promise<CacheLookUpResult>
     set(input: CacheSetInput): Promise<void>
-}
-
-export interface InMemoryMock {
-    clear(): void // Clears everything store in memory
 }
 
 export class DynamoCache implements Cache {
