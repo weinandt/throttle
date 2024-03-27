@@ -5,12 +5,13 @@ import { Cache } from "./cache";
 export type CacheSetInput = {
     key: string
     value: string
-    ttl: number | null
+    ttl: Date | null
 }
 
 export type CacheLookUpResult = {
     wasFound: boolean
     value: string | null
+    ttl: Date | null
 }
 
 export class CacheResolvers {
@@ -20,7 +21,12 @@ export class CacheResolvers {
     }
 
     async set(_: any, args: {input: CacheSetInput}, context: RequestContext, info: GraphQLResolveInfo): Promise<null> {
-        await this.cache.set(args.input.key, args.input.value, args.input.ttl)
+        let ttl = null
+        if (args.input.ttl != null) {
+            ttl = Math.floor(args.input.ttl.getTime() / 1000.0)
+        }
+
+        await this.cache.set(args.input.key, args.input.value, ttl)
 
         return null
     }
@@ -35,6 +41,7 @@ export class CacheResolvers {
         return {
             wasFound,
             value,
+            ttl: new Date(), // TODO: this is just a test.
         }
     }
 }

@@ -1,6 +1,10 @@
+###### Custom Scalars ######
+scalar DateTime
+
 type CacheLookUpResult {
   wasFound: Boolean!
   value: String # Will be set if the cache result was found.
+  ttl: DateTime # TODO: this is just a test.
 }
 
 input CacheSetInput {
@@ -8,8 +12,8 @@ input CacheSetInput {
   value: String! # Most likely stringified JSON.
   # Optional time to live in unix epoch seconds. 
   # If set, item will be expired from the cache at this time.
-  # Providing no value means the item is permenantly set.
-  ttl: Int
+  # Providing no value means the item is permenantly exists until deleted.
+  ttl: DateTime
 }
 
 type Query {

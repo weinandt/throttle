@@ -20,9 +20,5 @@
 - Implement feature flags
     - Good use case for batch write to cache and pagniated get.
 - Implement token burst and distributed throttle.
-- Test out dynamo ttl
-    - Removing attribute should prevent from purging
-    - Purged attribute should be purged.
-    - Updated key without ttl, should have ttl removed.
 - Create dynamo db table creation sdk.
     - SDK should provision partition key and TTL name.
