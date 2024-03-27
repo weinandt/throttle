@@ -1,16 +1,16 @@
 ###### Custom Scalars ######
 scalar DateTime
+scalar Void
 
 type CacheLookUpResult {
   wasFound: Boolean!
   value: String # Will be set if the cache result was found.
-  ttl: DateTime # TODO: this is just a test.
+  ttl: DateTime
 }
 
 input CacheSetInput {
   key: String! # Providing the same key, but different value and TTL will overwrite the cached object entirely.
   value: String! # Most likely stringified JSON.
-  # Optional time to live in unix epoch seconds. 
   # If set, item will be expired from the cache at this time.
   # Providing no value means the item is permenantly exists until deleted.
   ttl: DateTime
@@ -21,7 +21,7 @@ type Query {
 }
 
 type Mutation {
-  set(input: CacheSetInput!): String # please ignore the return type
+  set(input: CacheSetInput!): Void
 
   # Management APIs
   createTenant(input: CreateTenantInput!): Tenant!

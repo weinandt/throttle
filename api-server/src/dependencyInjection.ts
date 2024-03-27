@@ -6,7 +6,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { PostgresTenantGateway } from './tenant/tenant';
 import { TenantResolvers } from './tenant/tenantResolvers';
-import { DateTimeResolver, DateTimeTypeDefinition } from 'graphql-scalars'
+import { DateTimeResolver, VoidResolver } from 'graphql-scalars'
 
 export type Overrides = {
     cache?: Cache
@@ -36,6 +36,7 @@ export function setUpDepedencies(overrides?: Overrides) {
 
     return {
         DateTime: DateTimeResolver,
+        Void: VoidResolver,
         Query: {
             get: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => cacheResolvers.get(parent, args, context, info),
         },

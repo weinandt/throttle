@@ -8,10 +8,9 @@ export class CacheResolvers {
         this.cache = cache
     }
 
-    async set(_: any, args: {input: CacheSetInput}, context: RequestContext, info: GraphQLResolveInfo): Promise<null> {
+    async set(_: any, args: {input: CacheSetInput}, context: RequestContext, info: GraphQLResolveInfo): Promise<void> {
         await this.cache.set(args.input)
-
-        return null
+        return
     }
 
     async get(_: any, args: {key: string}, context: RequestContext, info: GraphQLResolveInfo): Promise<CacheLookUpResult> {
