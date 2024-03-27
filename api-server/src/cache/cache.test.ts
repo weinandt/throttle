@@ -2,8 +2,45 @@ import http from "node:http"
 import { ServerConfig, startServer } from "../server";
 import assert from "node:assert";
 import { Overrides, setUpDepedencies } from "../dependencyInjection";
-import { InMemoryCache } from "./cache";
+import { CacheLookUpResult, CacheSetInput, InMemoryCache } from "./cache";
 import { GraphQLClient, InMemoryMock } from "../test/utilties";
+
+const client = new GraphQLClient(3000)
+
+async function setCache(input: CacheSetInput): Promise<void> {
+        // TODO: change this mutation so it can take arguments instead of hardcoding.
+        // TODO: allow ttl to be passed as an optional argument.
+        const mutation = `
+                mutation {
+                    set(input: {
+                    key: "${input.key}"
+                    value: "${input.value}"
+                    })
+                }
+        `
+
+        await client.request(mutation)
+}
+
+async function getCache(key: string): Promise<CacheLookUpResult> {
+    // TODO: change this query to take arguments instead of hardcoding.
+    const query = `
+            {
+                get(key: "${key}") {
+                    wasFound
+                    value
+                    ttl
+                }
+            }
+          `
+        const result = (await client.request(query)).data.get
+
+        return {
+            ttl: result.ttl,
+            wasFound: result.wasFound,
+            value: result.value
+        }
+}
 
 describe('Cache Integration Tests', function () {
     const inMemoryCache = new InMemoryCache()
@@ -20,7 +57,7 @@ describe('Cache Integration Tests', function () {
         resolvers,
     }
     let server: http.Server
-    const client = new GraphQLClient(3000)
+
     before(async () => {
 
         server = await startServer(serverConfig)
@@ -42,46 +79,25 @@ describe('Cache Integration Tests', function () {
     });
 
     it('Item not in the cache should return not found', async () => {
-        const query = `
-            {
-                get(key: "doesNotExist") {
-                    wasFound
-                }
-            }
-          `
-        const result = await client.request(query)
+        const result = await getCache('not in cache')        
 
-        assert.equal(result.data.get.wasFound, false)
+        assert.equal(result.wasFound, false)
     })
 
     it('Set Item Should Be Returned', async () => {
         const key = 'testkey'
         const value = 'testvalue'
-        const mutation = `
-                mutation {
-                    set(input: {
-                    key: "${key}"
-                    value: "${value}"
-                    })
-                }
-        `
-
-        await client.request(mutation)
-
-        const query = `
-                {
-                    get(key: "${key}") {
-                        wasFound
-                        value
-                    }
-                }
-            `
         
-        const queryResponse = await client.request(query)
-        
-        assert.deepEqual(queryResponse.data.get, {
+        await setCache({
+            key,
+            value,
+        })
+
+        const response = await getCache(key)
+        assert.deepEqual(response, {
             wasFound: true,
-            value: value
+            value: value,
+            ttl: null,
         })
     })
 
