@@ -1,9 +1,21 @@
 import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
 
+export type CacheSetInput = {
+    key: string
+    value: string
+    ttl?: Date
+}
+
+export type CacheLookUpResult = {
+    wasFound: boolean
+    value?: string
+    ttl?: Date
+}
+
 export interface Cache {
-    get(key: string): Promise<[wasFound: boolean, value: string | null]>
-    set(key: string, value: string, ttl: number | null): Promise<void>
+    get(key: string): Promise<CacheLookUpResult>
+    set(input: CacheSetInput): Promise<void>
 }
 
 export interface InMemoryMock {
@@ -27,7 +39,7 @@ export class DynamoCache implements Cache {
         this.partitionKey = partitionKey
     }
 
-    async get(key: string): Promise<[boolean, string | null]> {
+    async get(key: string): Promise<CacheLookUpResult> {
         const dynamoKey: any = {}
         dynamoKey[this.partitionKey] = {
             S: key
@@ -42,13 +54,15 @@ export class DynamoCache implements Cache {
 
         const response = await this.dynamoClient.send(command)
         if (response.Item == null) {
-            return [false, null]
+            return {
+                wasFound: false
+            }
         }
 
-        // Checking TTL. If expired, returning null.
-        // Dynamo (nor any other cache) can auto evict everything when it expires.
-        // Implementing this type of check is required.
-        // A dynamo query with filter could also be used.
+        const result: CacheLookUpResult = {
+            wasFound: true,
+        }
+
         const returnedTTL = response.Item[this.ttlKey]
         if (returnedTTL != null && returnedTTL.N != null) {
             const returnedTTLAsNumber = parseInt(returnedTTL.N, 10)
@@ -56,10 +70,8 @@ export class DynamoCache implements Cache {
                 throw new Error('could not parse TTL for item' + returnedTTL)
             }
 
-            const currentTime = Math.floor(new Date().getTime() / 1000)
-            if (returnedTTLAsNumber < currentTime) {
-                return [false, null]
-            }
+            // Dynamo stores this in seconds, but javascript Dates are milliseconds unix epoch.
+            result.ttl = new Date(returnedTTLAsNumber * 1000)
         }
 
         const value = response.Item[this.valueKey]
@@ -67,17 +79,18 @@ export class DynamoCache implements Cache {
             throw new Error("Cached item was founds but did not have a value. Key Used: " + key)
         }
 
-        return [true, value.S]
+        result.value = value.S
+
+        return result
     }
 
-    async set(key: string, value: string, ttl: number | null): Promise<void> {
+    async set(input: CacheSetInput): Promise<void> {
         const Item: any = {}
-        Item[this.partitionKey] = key
-        Item[this.valueKey] = value
+        Item[this.partitionKey] = input.key
+        Item[this.valueKey] = input.value
 
-        if (ttl != null) {
-            // TODO: make this a graphql scalar.
-            Item[this.ttlKey] = ttl
+        if (input.ttl != null) {
+            Item[this.ttlKey] = Math.floor(input.ttl.getTime() / 1000.0)
         }
         
         // Put will completely overwrite the item.
@@ -86,25 +99,36 @@ export class DynamoCache implements Cache {
             Item,
         });
         
-        await this.dynamoClient.send(command);
+        await this.dynamoClient.send(command)
     }
 }
 
 export class InMemoryCache implements Cache, InMemoryMock {
-    private cache: Map<string, string> = new Map()
+    private cache: Map<string, CacheLookUpResult> = new Map()
 
-    async get(key: string): Promise<[wasFound: boolean, value: string | null]> {
-        const value = this.cache.get(key)
-        if (value == null) {
-            return [false, null]
+    async get(key: string): Promise<CacheLookUpResult> {
+        const result: CacheLookUpResult = {
+            wasFound: false,
         }
 
-        return [true, value]
+        const value = this.cache.get(key)
+        if (value == null) {
+            return result
+        }
+
+        result.wasFound = true
+        result.ttl = value.ttl
+        result.value = value.value
+
+        return result
     }
 
-    async set(key: string, value: string, ttl: number | null): Promise<void> {
-        // TODO: move ttl higher in the stack.
-        this.cache.set(key, value)
+    async set(input: CacheSetInput): Promise<void> {
+        this.cache.set(input.key, {
+            wasFound: true,
+            value: input.value,
+            ttl: input.ttl,
+        })
     }
     
     clear() {
