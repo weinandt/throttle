@@ -17,7 +17,8 @@ export class CacheResolvers {
         const cacheLookupResult = await this.cache.get(args.key)
 
         if (cacheLookupResult.ttl != null) {
-            if (cacheLookupResult.ttl < new Date()) {
+            const currentTime = new Date()
+            if (cacheLookupResult.ttl < currentTime) {
                 return {
                     wasFound: false
                 }

@@ -4,13 +4,15 @@ import assert from "node:assert";
 import { Overrides, setUpDepedencies } from "../dependencyInjection";
 import { CacheLookUpResult, CacheSetInput, InMemoryCache } from "./cache";
 import { GraphQLClient, InMemoryMock } from "../test/utilties";
+import { install } from '@sinonjs/fake-timers'
 
 const client = new GraphQLClient(3000)
+const clock = install()
 
 async function setCache(input: CacheSetInput): Promise<void> {
         let ttlString = ''
         if (input.ttl != null) {
-            ttlString = `ttl: ${input.ttl}`
+            ttlString = `ttl: "${input.ttl.toISOString()}"`
         }
         const mutation = `
                 mutation {
@@ -22,11 +24,13 @@ async function setCache(input: CacheSetInput): Promise<void> {
                 }
         `
 
-        await client.request(mutation)
+        const response = await client.request(mutation)
+        if (response.errors != null) {
+            throw new Error('got an error from the api.' + JSON.stringify(response.errors))
+        }
 }
 
 async function getCache(key: string): Promise<CacheLookUpResult> {
-    // TODO: change this query to take arguments instead of hardcoding.
     const query = `
             {
                 get(key: "${key}") {
@@ -81,6 +85,10 @@ describe('Cache Integration Tests', function () {
         inMemoryImplementations.forEach(x => x.clear())
     });
 
+    afterEach(() => {
+        clock.reset()
+    })
+
     it('Item not in the cache should return not found', async () => {
         const result = await getCache('not in cache')        
 
@@ -104,9 +112,53 @@ describe('Cache Integration Tests', function () {
         })
     })
 
-    // TODO: test for setting then getting
+    it('Time past ttl expiration should result in not finding the object in the cache.', async () => {
+        const key = 'myKey'
+        const ttl = new Date()
+        ttl.setDate(ttl.getDate() + 1)
+        const value = 'myValue'
+        await setCache({
+            key, ttl, value
+        })
 
-    // TODO: test for ttl
+        // Changing the time.
+        await clock.tickAsync(ttl.valueOf() + 1)
 
-    // TODO: test for changing from ttl to not ttl.
-});
+        const response = await getCache(key)
+        assert.equal(response.wasFound, false, 'should not have been found in cache.')
+    }) 
+
+    it('Object should be in cache if ttl has not expired.', async () => {
+        const key = 'myKey'
+        const ttl = new Date()
+        ttl.setDate(ttl.getDate() + 1)
+        const value = 'myValue'
+        await setCache({
+            key, ttl, value
+        })
+
+        // Changing the time to just before ttl.
+        await clock.tickAsync(ttl.valueOf() - 1)
+        
+        const response = await getCache(key)
+        assert.equal(response.wasFound, true, 'should have been found in cache.')
+    }) 
+
+    it.only('Removing ttl should prevent expiration.', async () => {
+        const key = 'myKey'
+        const ttl = new Date()
+        ttl.setDate(ttl.getDate() + 1)
+        const value = 'myValue'
+        await setCache({
+            key, ttl, value
+        })
+
+        // Changing the time.
+        await clock.tickAsync(ttl.valueOf() + 1)
+
+        await setCache({key, value})
+
+        const response = await getCache(key)
+        assert.equal(response.wasFound, true, 'Should still be in cache')
+    }) 
+})
