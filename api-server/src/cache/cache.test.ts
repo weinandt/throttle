@@ -8,13 +8,16 @@ import { GraphQLClient, InMemoryMock } from "../test/utilties";
 const client = new GraphQLClient(3000)
 
 async function setCache(input: CacheSetInput): Promise<void> {
-        // TODO: change this mutation so it can take arguments instead of hardcoding.
-        // TODO: allow ttl to be passed as an optional argument.
+        let ttlString = ''
+        if (input.ttl != null) {
+            ttlString = `ttl: ${input.ttl}`
+        }
         const mutation = `
                 mutation {
                     set(input: {
                     key: "${input.key}"
                     value: "${input.value}"
+                    ${ttlString}
                     })
                 }
         `
