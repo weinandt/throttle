@@ -69,6 +69,8 @@ export class InMemoryTokenBucketThottler {
             if (newTokens < 1 || newTokens > (this.refillAmount + this.burst)) {
                 newTokens = this.refillAmount + this.burst
             }
+
+            tokenBucket.tokensLeft = newTokens
         }
     }
 

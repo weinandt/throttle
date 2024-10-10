@@ -1,5 +1,6 @@
 import { InMemoryTokenBucketThottler } from './InMemoryTokenBucketThottler'
 import assert from 'node:assert'
+import sinon from 'sinon'
 
 describe('Token Bucket throttler initialization', () => {
     it('Null parameters not allowed in token bucket.', () => {
@@ -53,5 +54,89 @@ describe('Token Bucket throttler should throttle', () => {
         }
 
         assert(!shouldThrottle)
+    })
+    it('Below burst and refill should be allowed', () => {
+        const burst = 5
+        const refillAmount = 10
+        const throttler = new InMemoryTokenBucketThottler({
+            burst,
+            refillAmount,
+            refillIntervalInMs: 1000,
+        })
+
+        let shouldThrottle = false
+        for(let i = 0; i < burst + refillAmount; ++i) {
+            shouldThrottle = throttler.shouldThrottle('a')
+        }
+
+        assert(!shouldThrottle)
+    })
+})
+
+// Once node stabilizes the mock test functionality, use that instead of sinon.
+// https://nodejs.org/api/test.html#class-mocktimers
+describe('Token Bucket time dependent refill tests', () => {
+    let clock: sinon.SinonFakeTimers
+
+    beforeEach(() => {
+        clock = sinon.useFakeTimers()
+    })
+
+    afterEach(() => {
+        clock.restore()
+    })
+
+    it('Should have more tokens available after consuming all and refill takes place', () => {
+        const key = 'a'
+        const burst = 5
+        const refillAmount = 10
+        const refillIntervalInMs = 1000
+        const throttler = new InMemoryTokenBucketThottler({
+            burst,
+            refillAmount,
+            refillIntervalInMs,
+        })
+
+        // Consuming all tokens
+        for(let i = 0; i < burst + refillAmount; i++){
+            throttler.shouldThrottle(key)
+        }
+
+        // Advancing the time
+        clock.tick(refillIntervalInMs)
+
+        // We should now have the refill amount of callbacks left and exceeded should throttle.
+        for(let i = 0; i < refillAmount; i++){
+            assert(!throttler.shouldThrottle(key))
+        }
+
+        assert(throttler.shouldThrottle(key))
+    })
+    it('Multiple refill periods should give proper amount of tokens', () => {
+        const key = 'a'
+        const burst = 50 // This needs to allow for multiple refills without overflowing.
+        const refillAmount = 10
+        const refillIntervalInMs = 1000
+        const numRefillIntervals = 2
+        const throttler = new InMemoryTokenBucketThottler({
+            burst,
+            refillAmount,
+            refillIntervalInMs,
+        })
+
+        // Consuming all tokens
+        for(let i = 0; i < burst + refillAmount; i++){
+            throttler.shouldThrottle(key)
+        }
+
+        // Advancing the time
+        clock.tick(numRefillIntervals * refillIntervalInMs)
+
+        // We should now have the refill amount of callbacks left and exceeded should throttle.
+        for(let i = 0; i < numRefillIntervals * refillAmount; i++){
+            assert(!throttler.shouldThrottle(key))
+        }
+
+        assert(throttler.shouldThrottle(key))
     })
 })
