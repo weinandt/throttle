@@ -2,6 +2,15 @@
 
 A collection of throttling techniques, implemenations and documentation.
 
+## Techniques
+[In Memory Token Bucket Throttle](src/InMemoryTokenBucketThottler.ts)
+
+Features:
+
+1. Allows burst
+1. Removes un-used keys
+1. Refills buckets on specified interval
+
 ## To Test:
 1. `npm install`
 2. `npm run test`

@@ -17,7 +17,7 @@ export interface TokenBucketParams {
 }
 
 class TokenBucket {
-    tokensLeft: number = 0 // This will initially be burst. If every hits zero, throttling occurs.
+    tokensLeft: number = 0
 }
 
 export class InMemoryTokenBucketThottler {
@@ -25,7 +25,6 @@ export class InMemoryTokenBucketThottler {
     private burst: number
     private refillIntervalInMs: number
     private refillAmount: number
-    private timeoutTracker: NodeJS.Timeout // We will re-assign this to avoid memory leaks: https://lucumr.pocoo.org/2024/6/5/node-timeout/
 
     constructor(params: TokenBucketParams) {
         if (params == null) {
@@ -40,7 +39,6 @@ export class InMemoryTokenBucketThottler {
         // If refillBuckets were async, setTimeout should be used and re-newed every timeout to avoid too many invocations.
         const timeoutTracker = setInterval(() => { this.refillBuckets() }, this.refillIntervalInMs)
         timeoutTracker.unref() // Allowing the process to exit.
-        this.timeoutTracker = timeoutTracker
     }
 
     private initializeKey(key: string): TokenBucket {
