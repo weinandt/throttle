@@ -139,4 +139,56 @@ describe('Token Bucket time dependent refill tests', () => {
 
         assert(throttler.shouldThrottle(key))
     })
+    it('Multiple refill periods should not overfill bucket', () => {
+        const key = 'a'
+        const burst = 1 // This needs to allow for multiple refills without overflowing.
+        const refillAmount = 4
+        const refillIntervalInMs = 1000
+        const numRefillIntervals = 2
+        const throttler = new InMemoryTokenBucketThottler({
+            burst,
+            refillAmount,
+            refillIntervalInMs,
+        })
+
+        // Consuming all tokens
+        for(let i = 0; i < burst + refillAmount; i++){
+            throttler.shouldThrottle(key)
+        }
+
+        // Advancing the time
+        clock.tick(numRefillIntervals * refillIntervalInMs)
+
+        for(let i = 0; i < burst + refillAmount; i++){
+            assert(!throttler.shouldThrottle(key))
+        }
+
+        assert(throttler.shouldThrottle(key))
+    })
+    it('Un-used token buckets should be removed from memory', () => {
+        const key = 'a'
+        const burst = 1
+        const refillAmount = 4
+        const refillIntervalInMs = 1000
+        const throttler = new InMemoryTokenBucketThottler({
+            burst,
+            refillAmount,
+            refillIntervalInMs,
+        })
+
+        // Registering the key for a new token bucket
+        throttler.shouldThrottle(key)
+
+        // Looking at a private member of the class. This is necessary to show the map reduced in size.
+        const map = (throttler as any)['map'] as Map<string, any>
+        assert.equal(map.size, 1)
+
+        // Advancing the time one refill period. Object should stay in the map
+        clock.tick(refillIntervalInMs)
+        assert.equal(map.size, 1)
+
+        // Advancing the time again, no tokens were consumed and token bucket was full, object should be removed.
+        clock.tick(refillIntervalInMs)
+        assert.equal(map.size, 0)
+    })
 })
