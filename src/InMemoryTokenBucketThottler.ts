@@ -18,7 +18,6 @@ export interface TokenBucketParams {
 
 class TokenBucket {
     tokensLeft: number = 0 // This will initially be burst. If every hits zero, throttling occurs.
-    //hasUpdateSinceLastRefill = false // If no updates to this bucket have occurred, remove to save on memory.
 }
 
 export class InMemoryTokenBucketThottler {
@@ -38,8 +37,8 @@ export class InMemoryTokenBucketThottler {
         this.refillAmount = params.refillAmount
 
         // SetInterval can be used here as refillBuckets does no async work.
-        // If refillBuckets were async, setTimeout should be used and re-newed every timeout interval.
-        const timeoutTracker = setInterval(() => { this.refillBuckets() }, this.refillAmount)
+        // If refillBuckets were async, setTimeout should be used and re-newed every timeout to avoid too many invocations.
+        const timeoutTracker = setInterval(() => { this.refillBuckets() }, this.refillIntervalInMs)
         timeoutTracker.unref() // Allowing the process to exit.
         this.timeoutTracker = timeoutTracker
     }
@@ -55,8 +54,16 @@ export class InMemoryTokenBucketThottler {
     }
 
     private refillBuckets() {
-        for (let [_, value] of this.map) {
-            let newTokens = value.tokensLeft + this.refillAmount
+        for (let [key, tokenBucket] of this.map) {
+            const unusedTokens = tokenBucket.tokensLeft
+
+            // If no tokens were used, we should remove the token bucket to save on memory.
+            if (unusedTokens == this.refillAmount + this.burst) {
+                this.map.delete(key)
+                continue
+            }
+
+            let newTokens = unusedTokens + this.refillAmount
 
             // Checking for overflow or if exceeded burst
             if (newTokens < 1 || newTokens > (this.refillAmount + this.burst)) {
@@ -65,7 +72,7 @@ export class InMemoryTokenBucketThottler {
         }
     }
 
-    public shouldThrottle(key: string, incrementAmount: number): boolean {
+    public shouldThrottle(key: string): boolean {
         let tokenBucket = this.map.get(key)
         if(tokenBucket == null) {
             tokenBucket = this.initializeKey(key)
